@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "C:\\Users\\karth\\papps\\winpy64\\ps2\\python-3.7.4.amd64\\python.exe",
+    "python.pythonPath": "/home/karthikeyan/.pyenv/shims/python",
     "terminal.integrated.shell.windows": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
 
     "code-runner.customCommand": "$pythonPath $fullFileName --verbose --led SK6812RGBW --layout ZigZagT2B --width 10 --height 10  --port com4 > out.log 2>&1",
@@ -47,5 +47,8 @@
         "nim": "nim compile --verbosity:0 --hints:off --run",
         "lisp": "sbcl --script",
         "kit": "kitc --run"
-    }
+    },
+    "git.alwaysShowStagedChangesResourceGroup": true,
+    "git.enableSmartCommit": true,
+    "git.smartCommitChanges": "tracked"
 }

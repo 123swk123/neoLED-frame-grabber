@@ -20,6 +20,7 @@ class neoLED_FrameGrabber(QtCore.QObject):
         # self.iodev = QtSerialPort.QSerialPort()
         self.iodev = iodev
         self.ledFrameBytes = ledFrameBytes
+        self.ledColorChBytes = ledColorChBytes
         self.colorSpaceConv = colorConv
         self.buffOvrFlow = bytearray()
         self.buffFrame = []
@@ -34,10 +35,12 @@ class neoLED_FrameGrabber(QtCore.QObject):
                 raise Exception(self.iodev.portName() + ' Device Not Found')
 
             self.iodev.setBaudRate(2000000)
+            logger.warning('Opened {} @ {}'.format(self.iodev.portName(), self.iodev.baudRate()))
             self.iodev.readyRead.connect(self.processData)
         else:
             #for file type iodev
-            pass
+            logger.critical('Currently file mode unsupported')
+            raise NotImplementedError
 
         # self.newFrame = QtCore.pyqtSignal(bytearray)
 
@@ -67,8 +70,8 @@ class neoLED_FrameGrabber(QtCore.QObject):
                     # discard the frameBuffer if we don't have enough data even with prevframe data
                     if idxFooter + len(self.buffOvrFlow) == self.ledFrameBytes:
                         buffTmp = self.buffOvrFlow + thisBuffer[0:idxFooter]
-                        self.buffFrame = [self.colorSpaceConv(buffTmp[i:i+self.ledColorChBytes]) for i in range(0, idxFooter, self.ledColorChBytes)]
-                        logger.warning('less [{}+{}]'.format(self.buffOvrFlow, idxFooter))
+                        self.buffFrame = [self.colorSpaceConv(buffTmp[i:i+self.ledColorChBytes]) for i in range(0, len(buffTmp), self.ledColorChBytes)]
+                        logger.warning('less [{}+{}]={}'.format(len(self.buffOvrFlow), idxFooter, len(buffTmp)))
                     else:
                         # less frame but prev buffer size does not add up
                         logger.warning('discarding(S) data sz: {}'.format(idxFooter))
@@ -79,12 +82,12 @@ class neoLED_FrameGrabber(QtCore.QObject):
                     logger.warning('discarding(B/S) data sz: {}'.format(idxFooter))
 
                 # but check if we have trailing data which is basically next frame early data
-                if len(thisBuffer)-2 - idxFooter > 0:
-                    logger.warning('Trailing Data Sz: {}'.format(len(thisBuffer)-2 - idxFooter))
-                    self.buffOvrFlow = thisBuffer[idxFooter:-2]
+                if len(thisBuffer) - idxFooter - 2 > 0:
+                    logger.warning('Trailing Data Sz: {}'.format(len(thisBuffer) - idxFooter - 2))
+                    self.buffOvrFlow = thisBuffer[idxFooter+2:]
 
             else:
-                self.buffFrame = [int.from_bytes(thisBuffer[i:i+4], 'big') for i in range(0, idxFooter, 4)]
+                self.buffFrame = [self.colorSpaceConv(thisBuffer[i:i+self.ledColorChBytes]) for i in range(0, idxFooter, self.ledColorChBytes)]
                 self.buffOvrFlow = bytearray()
                 logger.warning('match')
 
@@ -160,19 +163,25 @@ if __name__ == "__main__":
         logger.critical('Invalid LED type, use --help to see the supported LED types')
         sys.exit(-1)
 
-    tmpObj = neoLED_FrameGrabber(QtSerialPort.QSerialPort(args.port), args.width * args.height * ledColorChBytes, ledColorChBytes, led2RGB, args.verbose)
-    # tmpObj = neoLED_FrameGrabber(QtCore.QFile(args.file), args.width * args.height * 4, args.verbose)
-    logger.warning('Started...')
-
     app = QtWidgets.QApplication([])
     view = QtQuick.QQuickView()
+
+    if args.port:
+        iodev = QtSerialPort.QSerialPort(args.port)
+    elif args.file:
+        iodev = QtCore.QFile(args.file)
+
+    tmpObj = neoLED_FrameGrabber(iodev, args.width * args.height * ledColorChBytes, ledColorChBytes, led2RGB, args.verbose)
+    # tmpObj = neoLED_FrameGrabber(QtCore.QFile(args.file), args.width * args.height * 4, args.verbose)
+    logger.warning('Started...neoLEDViewer')
+
     gCntxt=view.rootContext()
 
-    gCntxt.setContextProperty("simModelData",  [QtGui.QColor.fromRgb(0x800F00)]*100)
+    gCntxt.setContextProperty("simModelData",  [QtGui.QColor.fromRgb(0)]*(args.width * args.height))
     gCntxt.setContextProperty("simRefreshRate",  "0Hz")
     gCntxt.setContextProperty('pnlWidth', args.width)
     gCntxt.setContextProperty('pnlHeight',  args.height)
-    gCntxt.setContextProperty('pnlLEDSize', 48)
+    gCntxt.setContextProperty('pnlLEDSize', 32)
 
     if args.layout == 'SnakeL2R':
         gCntxt.setContextProperty('pnlLayoutSrc',  'SnakeL2R.qml')
@@ -188,7 +197,7 @@ if __name__ == "__main__":
 
     view.setResizeMode(QtQuick.QQuickView.SizeRootObjectToView)
 
-    view.setSource(QtCore.QUrl(pathlib.Path(__file__).parent.joinpath('PanelLayout.qml').as_uri()))
+    view.setSource(QtCore.QUrl(pathlib.Path(os.path.abspath('PanelLayout.qml')).as_uri()))
 
     gRootObjs = view.rootObject()
 
