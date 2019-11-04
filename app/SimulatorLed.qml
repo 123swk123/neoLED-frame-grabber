@@ -11,7 +11,7 @@ Item {
                 border.width:1
                 width:sizeLED-border.width; height:sizeLED-border.width; radius: (sizeLED-border.width)/5;
                 border.color:"#dc982c"
-                color: Qt.lighter(modelData, 2.5)
+                color: Qt.lighter(modelData, 1.5)
 
                 Text {
                     text: (index+1)

@@ -72,6 +72,7 @@ class neoLED_FrameGrabber(QtCore.QObject):
                         buffTmp = self.buffOvrFlow + thisBuffer[0:idxFooter]
                         self.buffFrame = [self.colorSpaceConv(buffTmp[i:i+self.ledColorChBytes]) for i in range(0, len(buffTmp), self.ledColorChBytes)]
                         logger.warning('less [{}+{}]={}'.format(len(self.buffOvrFlow), idxFooter, len(buffTmp)))
+                        self.newFrame.emit(self.buffFrame)
                     else:
                         # less frame but prev buffer size does not add up
                         logger.warning('discarding(S) data sz: {}'.format(idxFooter))
@@ -90,8 +91,7 @@ class neoLED_FrameGrabber(QtCore.QObject):
                 self.buffFrame = [self.colorSpaceConv(thisBuffer[i:i+self.ledColorChBytes]) for i in range(0, idxFooter, self.ledColorChBytes)]
                 self.buffOvrFlow = bytearray()
                 logger.warning('match')
-
-            self.newFrame.emit(self.buffFrame)
+                self.newFrame.emit(self.buffFrame)
 
     # @staticmethod
     # def callBackProcData():
