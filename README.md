@@ -21,5 +21,31 @@ Python + Qt QML based PC neoLED Viewer software, which reads the UART and render
 - Records and Dumps data for offline play back (WIP)
 - Refresh Rate monitoring
 
+### command line options
+```
+usage: Virtual neoLED Viewer [-h] --led <WS2811 | WS2812B | SK6812RGBW>
+                             [--ledsize <int>] --layout <SnakeL2R | SnakeT2B |
+                             ZigZagL2R | ZigZagT2B> --width <int> --height
+                             <int> [--port <serial port>]
+                             [--file <recorded file>] [--verbose] [--version]
+
+records or preview the neoLEDs with a defined layout
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --led <WS2811 | WS2812B | SK6812RGBW>
+                        LED type
+  --ledsize <int>       LED size in pixels
+  --layout <SnakeL2R | SnakeT2B | ZigZagL2R | ZigZagT2B>
+                        Pannel Layout type
+  --width <int>         Pannel Layout width
+  --height <int>        Pannel Layout height
+  --port <serial port>  live view HW serial port
+  --file <recorded file>
+                        use the offline recorded
+  --verbose             generate many logs
+  --version             show program's version number and exit
+```
+
 ### Software Picture 32x32 Snake Layout Left 2 Right
 ![Software Picture 32x32 Snake Layout Left 2 Right](analysis/neoLED_Viewer_32x32_SnakeL2R.png)
