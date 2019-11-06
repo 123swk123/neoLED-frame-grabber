@@ -54,48 +54,36 @@ class neoLED_FrameGrabber(QtCore.QObject):
     @QtCore.pyqtSlot()
     def processData(self):
         newBytesLen = self.iodev.bytesAvailable()
-        logger.warning('new data len:' + str(newBytesLen))
 
-        if newBytesLen >= self.ledFrameBytes:
-            thisBuffer = self.iodev.read(newBytesLen)
-            self.buffAccumulator.write(thisBuffer)
+        thisBuffer = self.iodev.read(newBytesLen)
+        self.buffOvrFlow += thisBuffer
+        self.buffAccumulator.write(thisBuffer)
 
-            idxFooter = thisBuffer.rfind(b'\x0d\x0a')
+       	ovfBytesLen = len(self.buffOvrFlow)
+        idxFooter = 0
+        logger.warning('buff len {}, {}'.format(newBytesLen, ovfBytesLen))
+
+        while (ovfBytesLen >= self.ledFrameBytes) and (idxFooter >= 0):
+
+            idxFooter = self.buffOvrFlow.find(b'\x0d\x0a')
             logger.warning('Footer: {}'.format(idxFooter))
 
-            if idxFooter != self.ledFrameBytes:
-                # frame size is either small or big
-                # discard the data if we dont have overflow buffer
-                if (idxFooter < self.ledFrameBytes) and (len(self.buffOvrFlow) > 0):
-                    # discard the frameBuffer if we don't have enough data even with prevframe data
-                    if idxFooter + len(self.buffOvrFlow) == self.ledFrameBytes:
-                        buffTmp = self.buffOvrFlow + thisBuffer[0:idxFooter]
-                        self.buffFrame = [self.colorSpaceConv(buffTmp[i:i+self.ledColorChBytes]) for i in range(0, len(buffTmp), self.ledColorChBytes)]
-                        logger.warning('less [{}+{}]={}'.format(len(self.buffOvrFlow), idxFooter, len(buffTmp)))
-                        self.newFrame.emit(self.buffFrame)
-                    else:
-                        # less frame but prev buffer size does not add up
-                        logger.warning('discarding(S) data sz: {}'.format(idxFooter))
-                    #emtpy the prev frame buffer
-                    self.buffOvrFlow = bytearray()
-                else:
-                    # in case of big frame or less frame but no prev buffer
+            if idxFooter > 0:
+                #extract the buffer
+                tmpExtractBuffer = self.buffOvrFlow[:idxFooter]
+
+                #remove the the extracted buffer
+                self.buffOvrFlow[:idxFooter+2] = []
+
+                if idxFooter != self.ledFrameBytes:
+                    # extracted buffer does not fit the frame, so discard them
                     logger.warning('discarding(B/S) data sz: {}'.format(idxFooter))
+                else:
+                    self.buffFrame = [self.colorSpaceConv(tmpExtractBuffer[i:i+self.ledColorChBytes]) for i in range(0, self.ledFrameBytes, self.ledColorChBytes)]
+                    # logger.warning('match')
+                    self.newFrame.emit(self.buffFrame)
 
-                # but check if we have trailing data which is basically next frame early data
-                if len(thisBuffer) - idxFooter - 2 > 0:
-                    logger.warning('Trailing Data Sz: {}'.format(len(thisBuffer) - idxFooter - 2))
-                    self.buffOvrFlow = thisBuffer[idxFooter+2:]
-
-            else:
-                self.buffFrame = [self.colorSpaceConv(thisBuffer[i:i+self.ledColorChBytes]) for i in range(0, idxFooter, self.ledColorChBytes)]
-                self.buffOvrFlow = bytearray()
-                logger.warning('match')
-                self.newFrame.emit(self.buffFrame)
-
-    # @staticmethod
-    # def callBackProcData():
-    #     neoLED_FrameGrabber.callBackObj.processData()
+            ovfBytesLen = len(self.buffOvrFlow)
 
     def getFrame(self):
         return self.buffFrame
@@ -104,10 +92,6 @@ tmpObj = None
 gCntxt = None
 tmeStamps = deque(maxlen=20)
 tmePrev = None
-
-# @QtCore.pyqtSlot()
-# def callback():
-#     tmpObj.processData()
 
 @QtCore.pyqtSlot('QVector<int>')
 def frameRefresh(frame):
@@ -135,15 +119,16 @@ def frameRefresh(frame):
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser('Virtual neoLED Viewer', description='records or preview the neoLEDs with a defined layout')
-    argparser.add_argument('--led', metavar='<WS2811/WS2812B/SK6812RGBW>', type=str, required=True, help='LED type')
-    argparser.add_argument('--layout', metavar='<SnakeL2R/SnakeT2B/ZigZagL2R/ZigZagT2B>', type=str, required=True, help='Pannel Layout type')
-    argparser.add_argument('--width', metavar='1..32', type=int, required=True, help='Pannel Layout width')
-    argparser.add_argument('--height', metavar='1..32', type=int, required=True, help='Pannel Layout height')
+    argparser.add_argument('--led', metavar='<WS2811 | WS2812B | SK6812RGBW>', type=str, required=True, help='LED type')
+    argparser.add_argument('--ledsize', metavar='<int>', type=int, required=False, default=32, help='LED size in  pixels')
+    argparser.add_argument('--layout', metavar='<SnakeL2R | SnakeT2B | ZigZagL2R | ZigZagT2B>', type=str, required=True, help='Pannel Layout type')
+    argparser.add_argument('--width', metavar='<int>', type=int, required=True, help='Pannel Layout width')
+    argparser.add_argument('--height', metavar='<int>', type=int, required=True, help='Pannel Layout height')
     # argparser.add_argument('--refresh', metavar='<LED Panel Refresh Rate in Hz>', type=int, required=True, help='Define refresh rate higher than actual panel refresh rate for smooth live view')
     argparser.add_argument('--port', metavar='<serial port>', type=str, required=False, help='live view HW serial port')
     argparser.add_argument('--file', metavar='<recorded file>', type=str, required=False, help='use the offline recorded')
     argparser.add_argument('--verbose', action = 'store_true', help='generate many logs')
-    argparser.add_argument('--version', action='version', version='%(prog)s v0.0')
+    argparser.add_argument('--version', action='version', version='%(prog)s v0.1')
 
     args = argparser.parse_args()
 
@@ -181,7 +166,7 @@ if __name__ == "__main__":
     gCntxt.setContextProperty("simRefreshRate",  "0Hz")
     gCntxt.setContextProperty('pnlWidth', args.width)
     gCntxt.setContextProperty('pnlHeight',  args.height)
-    gCntxt.setContextProperty('pnlLEDSize', 32)
+    gCntxt.setContextProperty('pnlLEDSize', args.ledsize)
 
     if args.layout == 'SnakeL2R':
         gCntxt.setContextProperty('pnlLayoutSrc',  'SnakeL2R.qml')

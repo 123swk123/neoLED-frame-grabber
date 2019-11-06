@@ -8,17 +8,30 @@ Item {
         id:_compLED
         Item {
             Rectangle {
-                border.width:1
+                id: _compRect
+                border.width:sizeLED/24
                 width:sizeLED-border.width; height:sizeLED-border.width; radius: (sizeLED-border.width)/5;
                 border.color:"#dc982c"
                 color: Qt.lighter(modelData, 1.5)
 
-                Text {
-                    text: (index+1)
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                    font.pointSize: 7.5
-                    color: 'white'
+                Loader {
+                    id: loaderText
+                }
+                Component.onCompleted: {
+                    if(sizeLED > 32+border.width)
+                        loaderText.sourceComponent = _compText
+                }
+
+                Component {
+                    id: _compText
+                    Text {
+                        text: (index+1)
+                        parent: _compRect
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.pointSize: 7.5
+                        color: '#303030'
+                    }
                 }
             }
         }
