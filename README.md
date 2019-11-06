@@ -10,6 +10,8 @@ this way we compose LED data bits to single byte which is read on SPI interrupt 
 
 [Schematic](schematic/neoLED2SPI.PDF)
 
+[Firmware](firmware/neoLED2SPI.X/dist/default/production/neoLED2SPI.X.production.hex)
+
 Python + Qt QML based PC neoLED Viewer software, which reads the UART and renders them on the fly.
 - Many types of LED support
 - Any layout size and 4 types of LED layout arrangement
