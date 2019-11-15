@@ -5,8 +5,8 @@ import QtQuick.Controls 2.12
 Item {
     id: itmRoot
 
-    width: rectOuter.width + rectOuter.x
-    height: rectOuter.height + rectOuter.y
+    width: rectOuter.width + rectOuter.x + 8
+    height: rectOuter.height + rectOuter.y + 8
 
     // create an object instance of model view Component
     SimulatorLed {
@@ -18,8 +18,9 @@ Item {
         id: rectOuter
         x: 8
         y: 8
-        width: colLayout.width + 8
+        width: colLayout.width
         height: colLayout.height
+        color: "gray"
 
         ColumnLayout {
             id: colLayout
@@ -37,8 +38,9 @@ Item {
             Text {
                 id: txtRefresh
                 text: simRefreshRate
-                font.pointSize: 12
+                font.pointSize: Math.min(24, (12/4) * pnlLEDSize)
                 font.bold: true
+                color: "orange"
             }
         }
     }

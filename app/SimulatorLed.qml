@@ -9,16 +9,18 @@ Item {
         Item {
             Rectangle {
                 id: _compRect
-                border.width:sizeLED/24
-                width:sizeLED-border.width; height:sizeLED-border.width; radius: (sizeLED-border.width)/5;
-                border.color:"#dc982c"
+                // removing border improves render speed, due to less number of render features
+                // border.width:sizeLED/24
+                // width:sizeLED-border.width; height:sizeLED-border.width; radius: (sizeLED-border.width)/5;
+                // border.color:"gray"//"#dc982c"
+                width:sizeLED; height:sizeLED; radius: sizeLED/6;
                 color: Qt.lighter(modelData, 1.5)
 
                 Loader {
                     id: loaderText
                 }
                 Component.onCompleted: {
-                    if(sizeLED > 32+border.width)
+                    if(sizeLED > 24+border.width)
                         loaderText.sourceComponent = _compText
                 }
 
