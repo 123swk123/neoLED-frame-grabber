@@ -101,19 +101,19 @@ def frameRefresh(frame):
 
     tmeStamp = time.time()
 
-    if tmePrev is not None:
+    if tmePrev is not None and (tmeStamp - tmePrev) != 0:
         tmeStamps.append(1 / (tmeStamp - tmePrev))
     
     if len(tmeStamps) < tmeStamps.maxlen:
-        RefreshRate = 0.0
+        gCntxt.setContextProperty("simRefreshRate",  "Calculating Hz...")
     else:
         RefreshRate = sum(tmeStamps)/tmeStamps.maxlen
+        gCntxt.setContextProperty("simRefreshRate",  "{:0.4}Hz".format(RefreshRate))
 
     # print(len(frame), frame)
     frameColor = [QtGui.QColor.fromRgb(pixel) for pixel in frame]
     gCntxt.setContextProperty("simModelData",  frameColor)
-    gCntxt.setContextProperty("simRefreshRate",  "{:0.4}Hz".format(RefreshRate))
-
+    
     tmePrev = tmeStamp
     # pass
 
@@ -149,6 +149,7 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     app = QtWidgets.QApplication([])
+    app.setApplicationDisplayName(argparser.prog)
     view = QtQuick.QQuickView()
 
     if args.port:
