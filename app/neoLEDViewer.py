@@ -57,18 +57,19 @@ class neoLED_FrameGrabber(QtCore.QObject):
 
         thisBuffer = self.iodev.read(newBytesLen)
         self.buffOvrFlow += thisBuffer
+       	ovfBytesLen = len(self.buffOvrFlow)
+
+        # idxFooter = 999999
+        logger.warning('buff len @{} New:{}, Q:{}'.format(self.buffAccumulator.tell(), newBytesLen, ovfBytesLen))
         self.buffAccumulator.write(thisBuffer)
 
-       	ovfBytesLen = len(self.buffOvrFlow)
-        idxFooter = 0
-        logger.warning('buff len {}, {}'.format(newBytesLen, ovfBytesLen))
-
-        while (ovfBytesLen >= self.ledFrameBytes) and (idxFooter >= 0):
+        while (ovfBytesLen >= self.ledFrameBytes):
+        # and (idxFooter >= 0):
 
             idxFooter = self.buffOvrFlow.find(b'\x0d\x0a')
             logger.warning('Footer: {}'.format(idxFooter))
 
-            if idxFooter > 0:
+            if idxFooter >= 0:
                 #extract the buffer
                 tmpExtractBuffer = self.buffOvrFlow[:idxFooter]
 
@@ -82,8 +83,14 @@ class neoLED_FrameGrabber(QtCore.QObject):
                     self.buffFrame = [self.colorSpaceConv(tmpExtractBuffer[i:i+self.ledColorChBytes]) for i in range(0, self.ledFrameBytes, self.ledColorChBytes)]
                     # logger.warning('match')
                     self.newFrame.emit(self.buffFrame)
+            elif ovfBytesLen >= self.ledFrameBytes*5:
+                # for last 5 frames we did not receive the EOS(End Of Stream)
+                self.buffOvrFlow[:] = []    #remove everything
+            elif ovfBytesLen < self.ledFrameBytes*5:
+                break
 
             ovfBytesLen = len(self.buffOvrFlow)
+            logger.warning('buff len Q:{}'.format(ovfBytesLen))
 
     def getFrame(self):
         return self.buffFrame
