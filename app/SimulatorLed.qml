@@ -14,7 +14,7 @@ Item {
                 // width:sizeLED-border.width; height:sizeLED-border.width; radius: (sizeLED-border.width)/5;
                 // border.color:"gray"//"#dc982c"
                 width:sizeLED; height:sizeLED; radius: sizeLED/6;
-                color: Qt.lighter(modelData, 1.5)
+                color: modelData//Qt.lighter(modelData, 1.5)
 
                 Loader {
                     id: loaderText
